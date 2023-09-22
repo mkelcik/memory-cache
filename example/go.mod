@@ -4,4 +4,4 @@ go 1.21.0
 
 replace memory-cache => ../
 
-require memory-cache v0.0.0-00010101000000-000000000000
+require gitbucket.home/michal/memory-cache v0.0.0-20230922221623-51b0cbca207a
