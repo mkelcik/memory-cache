@@ -46,23 +46,24 @@ func (c *Cache[K, T]) Del(key K) {
 	delete(c.storage, key)
 }
 
-func (c *Cache[K, T]) GetOrSet(key K, callback func() T) T {
+func (c *Cache[K, T]) GetOrSet(key K, callback func() (T, bool)) (T, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	if v, ok := c.getFromMap(key); ok {
-		return v
+		return v, true
 	}
 
 	var out T
+	var ok bool
 	if callback == nil {
-		return out
+		return out, ok
 	}
 
-	out = callback()
-	c.setToMap(key, out)
+	out, ok = callback()
 
-	return out
+	c.setToMap(key, out)
+	return out, ok
 }
 
 func (c *Cache[K, T]) setToMap(key K, value T) {
