@@ -68,10 +68,12 @@ func readSingle() {
 func readMulti() {
 	cache := memorycache.NewCache[int, int](100, 0)
 
-	start := time.Now()
+	toCache := make(map[int]int, sampleSize)
 	for i := 0; i < sampleSize; i++ {
-		cache.Set(i, i)
+		toCache[i] = i
 	}
+	start := time.Now()
+	cache.SetMany(toCache)
 	fmt.Println("init time", time.Since(start).Seconds(), "s")
 
 	start = time.Now()

@@ -48,10 +48,7 @@ func (c *Cache[K, T]) Flush() {
 	c.storage = make(map[K]*Item[K, T], c.maxSize)
 }
 
-func (c *Cache[K, T]) Del(key K) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
+func (c *Cache[K, T]) deleteFromMap(key K) {
 	// rebuild my list
 	item, ok := c.storage[key]
 	if ok {
@@ -84,6 +81,13 @@ func (c *Cache[K, T]) Del(key K) {
 		}
 	}
 	delete(c.storage, key)
+}
+
+func (c *Cache[K, T]) Del(key K) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.deleteFromMap(key)
 }
 
 func (c *Cache[K, T]) GetOrSet(key K, callback func() (T, bool)) (T, bool) {
