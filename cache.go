@@ -16,26 +16,59 @@ type Item[K comparable, T any] struct {
 
 type Cache[K comparable, T any] struct {
 	storage map[K]*Item[K, T]
-	maxSize uint
-	lock    sync.RWMutex
-	ttl     time.Duration
+
+	size       uint
+	strictSize bool
+
+	ttl time.Duration
+
+	lock       sync.RWMutex
+	gcInterval time.Duration
 
 	first *Item[K, T]
 	last  *Item[K, T]
 }
 
-func NewCache[K comparable, T any](maxSize uint, ttl time.Duration) *Cache[K, T] {
+func NewCache[K comparable, T any](size uint, strictSize bool, ttl time.Duration, gcInterval time.Duration) *Cache[K, T] {
 	s := map[K]*Item[K, T]{}
 	// preallocate map
-	if maxSize > 0 {
-		s = make(map[K]*Item[K, T], maxSize)
+	if size > 0 {
+		s = make(map[K]*Item[K, T], size)
 	}
 
 	return &Cache[K, T]{
-		storage: s,
-		maxSize: maxSize,
-		ttl:     ttl,
-		lock:    sync.RWMutex{},
+		storage:    s,
+		size:       size,
+		strictSize: strictSize,
+		ttl:        ttl,
+		lock:       sync.RWMutex{},
+		gcInterval: gcInterval,
+	}
+}
+
+func (c *Cache[K, T]) checkAndCleanFirst(now time.Time) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.first == nil {
+		return false
+	}
+
+	if c.first.created.Before(now) {
+		c.deleteFromMap(c.first.key)
+		return true
+	}
+	return false
+}
+
+func (c *Cache[K, T]) GCRun() {
+	now := time.Now()
+
+	for {
+		// clear until last element has valid TTL then stop
+		if !c.checkAndCleanFirst(now) {
+			return
+		}
 	}
 }
 
@@ -45,7 +78,7 @@ func (c *Cache[K, T]) Flush() {
 
 	c.first = nil
 	c.last = nil
-	c.storage = make(map[K]*Item[K, T], c.maxSize)
+	c.storage = make(map[K]*Item[K, T], c.size)
 }
 
 func (c *Cache[K, T]) deleteFromMap(key K) {

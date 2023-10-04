@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	sampleSize = 100_000_000
+	sampleSize = 10_000_000
 )
 
 func concurrency() {
-	cache := memorycache.NewCache[int, int](100, 0)
+	cache := memorycache.NewCache[int, int](100, false, 0, 0)
 
 	start := time.Now()
 
@@ -39,7 +39,7 @@ func concurrency() {
 }
 
 func single() {
-	cache := memorycache.NewCache[int, int](100, 0)
+	cache := memorycache.NewCache[int, int](100, false, 0, 0)
 
 	start := time.Now()
 	for i := 0; i < sampleSize; i++ {
@@ -49,7 +49,7 @@ func single() {
 }
 
 func readSingle() {
-	cache := memorycache.NewCache[int, int](100, 0)
+	cache := memorycache.NewCache[int, int](100, false, 0, 0)
 
 	start := time.Now()
 	for i := 0; i < sampleSize; i++ {
@@ -66,7 +66,7 @@ func readSingle() {
 }
 
 func readMulti() {
-	cache := memorycache.NewCache[int, int](100, 0)
+	cache := memorycache.NewCache[int, int](100, false, 0, 0)
 
 	toCache := make(map[int]int, sampleSize)
 	for i := 0; i < sampleSize; i++ {
