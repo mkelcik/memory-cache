@@ -48,6 +48,52 @@ func single() {
 	fmt.Println(time.Since(start).Seconds(), "s")
 }
 
+func ttlTest() {
+	cache := memorycache.NewCache[int, int](100, false, 10*time.Second, 0)
+
+	start := time.Now()
+	for i := 0; i < 10; i++ {
+		cache.Set(i, i)
+		time.Sleep(2 * time.Second)
+	}
+	fmt.Println("init time", time.Since(start).Seconds(), "s")
+
+	start = time.Now()
+	for i := 0; i < 10; i++ {
+		v, _ := cache.Get(i)
+		fmt.Println(v)
+	}
+
+	time.Sleep(5 * time.Second)
+	cache.GCRun()
+
+	for i := 0; i < 10; i++ {
+		if v, ok := cache.Get(i); ok {
+			fmt.Println(v)
+		} else {
+			fmt.Println("no value")
+		}
+	}
+	duration := time.Since(start).Seconds()
+	fmt.Println("read time", duration, "s", "(", float64(sampleSize)/duration, ")")
+}
+
+func gcSchedulerTest() {
+	cache := memorycache.NewCache[int, int](100, false, 60*time.Second, 10*time.Second)
+	for i := 0; i < 10; i++ {
+		cache.Set(i, i)
+		fmt.Println("key", i, "added")
+		time.Sleep(5 * time.Second)
+	}
+
+	for {
+		if cache.Len() == 0 {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func readSingle() {
 	cache := memorycache.NewCache[int, int](100, false, 0, 0)
 
@@ -100,5 +146,5 @@ func readMulti() {
 }
 
 func main() {
-	readMulti()
+	gcSchedulerTest()
 }

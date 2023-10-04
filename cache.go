@@ -1,7 +1,9 @@
 package memory_cache
 
 import (
+	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,6 +18,7 @@ type Item[K comparable, T any] struct {
 
 type Cache[K comparable, T any] struct {
 	storage map[K]*Item[K, T]
+	length  atomic.Int32 // Fix this
 
 	size       uint
 	strictSize bool
@@ -24,9 +27,49 @@ type Cache[K comparable, T any] struct {
 
 	lock       sync.RWMutex
 	gcInterval time.Duration
+	gcDone     chan bool
 
 	first *Item[K, T]
 	last  *Item[K, T]
+}
+
+func (c *Cache[K, T]) GCSchedulerStart() {
+	if c.gcInterval == 0 {
+		return
+	}
+
+	go func(done <-chan bool) {
+		ticker := time.NewTicker(c.gcInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-done:
+				fmt.Println("gc stop")
+				return
+			case <-ticker.C:
+				fmt.Println("gc tick")
+				c.GCRun()
+			}
+		}
+	}(c.gcDone)
+}
+
+func (c *Cache[K, T]) GCSchedulerStop() {
+	c.gcDone <- true
+}
+
+func (c *Cache[K, T]) Close() error {
+	c.GCSchedulerStop()
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	clear(c.storage)
+	c.first = nil
+	c.last = nil
+
+	return nil
 }
 
 func NewCache[K comparable, T any](size uint, strictSize bool, ttl time.Duration, gcInterval time.Duration) *Cache[K, T] {
@@ -36,14 +79,17 @@ func NewCache[K comparable, T any](size uint, strictSize bool, ttl time.Duration
 		s = make(map[K]*Item[K, T], size)
 	}
 
-	return &Cache[K, T]{
+	c := &Cache[K, T]{
 		storage:    s,
 		size:       size,
 		strictSize: strictSize,
 		ttl:        ttl,
 		lock:       sync.RWMutex{},
 		gcInterval: gcInterval,
+		gcDone:     make(chan bool),
 	}
+	c.GCSchedulerStart()
+	return c
 }
 
 func (c *Cache[K, T]) checkAndCleanFirst(now time.Time) bool {
@@ -54,7 +100,8 @@ func (c *Cache[K, T]) checkAndCleanFirst(now time.Time) bool {
 		return false
 	}
 
-	if c.first.created.Before(now) {
+	if c.first.created.Add(c.ttl).Before(now) {
+		fmt.Println(c.first.key, "deleted")
 		c.deleteFromMap(c.first.key)
 		return true
 	}
@@ -112,8 +159,14 @@ func (c *Cache[K, T]) deleteFromMap(key K) {
 				c.last = nil
 			}
 		}
+
+		c.length.Add(-1)
 	}
 	delete(c.storage, key)
+}
+
+func (c *Cache[K, T]) Len() int {
+	return int(c.length.Load())
 }
 
 func (c *Cache[K, T]) Del(key K) {
@@ -152,6 +205,7 @@ func (c *Cache[K, T]) setToMap(key K, value T) {
 	}
 
 	c.storage[key] = item
+	c.length.Add(1)
 
 	if c.last != nil {
 		c.last.next = item
@@ -164,7 +218,7 @@ func (c *Cache[K, T]) setToMap(key K, value T) {
 }
 
 func (c *Cache[K, T]) getFromMap(key K) (T, bool) {
-	if i, ok := c.storage[key]; ok && i.created.Add(c.ttl).Before(time.Now()) {
+	if i, ok := c.storage[key]; ok && i.created.Add(c.ttl).After(time.Now()) {
 		return i.value, true
 	}
 
