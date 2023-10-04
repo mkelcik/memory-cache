@@ -56,7 +56,11 @@ func (c *Cache[K, T]) GCSchedulerStart() {
 }
 
 func (c *Cache[K, T]) GCSchedulerStop() {
-	c.gcDone <- true
+	select {
+	//possible deadlock
+	case c.gcDone <- true:
+	default:
+	}
 }
 
 func (c *Cache[K, T]) Close() error {
@@ -69,6 +73,7 @@ func (c *Cache[K, T]) Close() error {
 	c.first = nil
 	c.last = nil
 
+	close(c.gcDone)
 	return nil
 }
 
