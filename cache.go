@@ -18,7 +18,7 @@ type Item[K comparable, T any] struct {
 
 type Cache[K comparable, T any] struct {
 	storage map[K]*Item[K, T]
-	length  atomic.Int32 // Fix this
+	length  atomic.Uint64
 
 	size       uint
 	strictSize bool
@@ -34,9 +34,13 @@ type Cache[K comparable, T any] struct {
 }
 
 func (c *Cache[K, T]) GCSchedulerStart() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.gcInterval == 0 {
 		return
 	}
+	c.gcDone = make(chan bool)
 
 	go func(done <-chan bool) {
 		ticker := time.NewTicker(c.gcInterval)
@@ -56,11 +60,18 @@ func (c *Cache[K, T]) GCSchedulerStart() {
 }
 
 func (c *Cache[K, T]) GCSchedulerStop() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.gcDone == nil {
+		return
+	}
+
 	select {
-	//possible deadlock
 	case c.gcDone <- true:
 	default:
 	}
+	close(c.gcDone)
 }
 
 func (c *Cache[K, T]) Close() error {
@@ -91,7 +102,6 @@ func NewCache[K comparable, T any](size uint, strictSize bool, ttl time.Duration
 		ttl:        ttl,
 		lock:       sync.RWMutex{},
 		gcInterval: gcInterval,
-		gcDone:     make(chan bool),
 	}
 	c.GCSchedulerStart()
 	return c
@@ -131,6 +141,7 @@ func (c *Cache[K, T]) Flush() {
 	c.first = nil
 	c.last = nil
 	c.storage = make(map[K]*Item[K, T], c.size)
+	c.length.Store(0)
 }
 
 func (c *Cache[K, T]) deleteFromMap(key K) {
