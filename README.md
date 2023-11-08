@@ -15,6 +15,7 @@ package main
 import (
 	"fmt"
 	cache "github.com/mkelcik/memory-cache"
+	"time"
 )
 
 type CacheValue struct {
@@ -25,20 +26,20 @@ func main() {
 	// define type of key and value
 	// first parameter is pre allocation size
 	// if second parameter is true, cache is limited to this size, if false the cache can grow beyond this capacity
-	// third parameter is ttl for cache records in seconds, if is set to 0 the cache items never expire
+	// third parameter is ttl duration for records, if is set to 0 the cache items never expire
 	// last parameter is GC interval in seconds, if set to 0, GC will never start automatically
-	cache := cache.NewCache[int, CacheValue](100, false, 60, 120)
+	cache := cache.NewCache[int, CacheValue](100, false, 60 * time.Second, 120 * time.Second)
 
 	// set data to cache
 	for i := 1; i <= 100; i++ {
 		cache.Set(i, CacheValue{Value: 1})
 	}
-	
+
 	// read from cache 
 	itemFromCache, ok := cache.Get(1)
 	if ok {
 		fmt.Println("value is:", itemFromCache.Value)
-    }
+	}
 }
 ```
 
