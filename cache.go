@@ -18,7 +18,7 @@ type Item[K comparable, T any] struct {
 
 type Cache[K comparable, T any] struct {
 	storage map[K]*Item[K, T]
-	length  atomic.Uint64
+	length  atomic.Int64
 
 	size       uint
 	strictSize bool
