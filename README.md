@@ -14,7 +14,7 @@ package main
 
 import (
 	"fmt"
-	cache "github.com/mkelcik/memory-cache"
+	mcache "github.com/mkelcik/memory-cache"
 	"time"
 )
 
@@ -28,7 +28,7 @@ func main() {
 	// if second parameter is true, cache is limited to this size, if false the cache can grow beyond this capacity
 	// third parameter is ttl duration for records, if is set to 0 the cache items never expire
 	// last parameter is GC interval in seconds, if set to 0, GC will never start automatically
-	cache := cache.NewCache[int, CacheValue](100, false, 60 * time.Second, 120 * time.Second)
+	cache := mcache.NewCache[int, CacheValue](100, false, 60 * time.Second, 120 * time.Second)
 
 	// set data to cache
 	for i := 1; i <= 100; i++ {

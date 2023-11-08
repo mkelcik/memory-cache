@@ -1,2 +1,2 @@
-gitbucket.home/michal/memory-cache v0.0.0-20230922221623-51b0cbca207a h1:7avEA5sFMpVPHnMy3sOML0QjHalWQbue+sFZ9H5JFUs=
-gitbucket.home/michal/memory-cache v0.0.0-20230922221623-51b0cbca207a/go.mod h1:rnD5JPgv+caYkP7Hb3HR9mXapis5n8S00F2Q8r/7fP4=
+github.com/mkelcik/memory-cache v0.1.3 h1:H+m86fKMFd726Czq5GMRZg2ufOPFf3ZWTMRg5WI1Kd0=
+github.com/mkelcik/memory-cache v0.1.3/go.mod h1:3M+bUtlbjtukHL77YuMK+NLT+xszB37rnyA4gN97RTI=
