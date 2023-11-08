@@ -181,8 +181,8 @@ func (c *Cache[K, T]) deleteFromMap(key K) {
 	delete(c.storage, key)
 }
 
-func (c *Cache[K, T]) Len() int {
-	return int(c.length.Load())
+func (c *Cache[K, T]) Len() int64 {
+	return int64(c.length.Load())
 }
 
 func (c *Cache[K, T]) Del(key K) {

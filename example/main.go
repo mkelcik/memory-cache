@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	memorycache "gitbucket.home/michal/memory-cache"
+	memorycache "github.com/mkelcik/memory-cache"
 	"sync"
 	"time"
 )
