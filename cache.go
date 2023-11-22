@@ -49,10 +49,8 @@ func (c *Cache[K, T]) GCSchedulerStart() {
 		for {
 			select {
 			case <-done:
-				fmt.Println("gc stop")
 				return
 			case <-ticker.C:
-				fmt.Println("gc tick")
 				c.GCRun()
 			}
 		}
